@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olist · Analytics & gouvernance des données</title>
+<meta name="description" content="Étude de cas Data Analyst / BI : SQL, dbt, DuckDB, qualité et gouvernance des données.">
+<style>
+  :root { --ink:#16202b; --muted:#5b6b7a; --teal:#0f9f8f; --line:#e3e9ee; }
+  * { box-sizing:border-box }
+  body { margin:0; font:16px/1.6 Inter, "Segoe UI", Arial, sans-serif; color:var(--ink); background:#f7fafb }
+  main { max-width:860px; margin:0 auto; padding:56px 16px }
+  h1 { font-size:clamp(26px,4vw,36px); line-height:1.2; margin:0 0 10px }
+  p { color:var(--muted) }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:28px }
+  a.card { display:block; padding:22px; background:#fff; border:1px solid var(--line); border-radius:16px; color:inherit; text-decoration:none }
+  a.card:hover { border-color:var(--teal) }
+  a.card b { display:block; font-size:18px; margin-bottom:4px }
+  a.card span { color:var(--muted); font-size:14px }
+</style>
+</head>
+<body>
+<main>
+  <h1>Analyse des ventes et gouvernance des données</h1>
+  <p>Étude de cas Data Analyst / BI sur environ 100 000 commandes de la marketplace Olist : modélisation dbt + DuckDB,
+     10 questions métier en SQL, 20 règles de qualité et documentation de gouvernance.</p>
+  <div class="grid">
+    <a class="card" href="report/"><b>Rapport interactif →</b><span>10 analyses, graphiques et score de qualité</span></a>
+    <a class="card" href="dbt-docs/"><b>Dictionnaire et lignage →</b><span>Documentation dbt de chaque table et colonne</span></a>
+    <a class="card" href="https://github.com/tsitohaina23/olist-analytics-governance"><b>Code source →</b><span>SQL, modèles dbt, tests, gouvernance</span></a>
+  </div>
+</main>
+</body>
+</html>

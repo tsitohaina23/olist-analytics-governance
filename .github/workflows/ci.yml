@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Dépendances
+        run: pip install -r requirements.txt
+
+      - name: Pipeline complet (données, dbt build, analyses, rapports)
+        run: python scripts/pipeline.py
+
+      - name: Tests Python
+        run: pytest -q
+
+      - name: Documentation dbt et rapport (artefacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: docs/

@@ -237,15 +237,15 @@ def exports(con: duckdb.DuckDBPyConnection) -> None:
                    count(*) filter (where is_late) as late_orders, count(*) filter (where is_delivered) as delivered_orders
             from marts.fct_orders
             where in_analysis_window and order_status not in ('canceled', 'unavailable')
-            group by all order by purchase_date""",
+            group by all order by all""",
         "ventes_categories_mensuelles": """
             select cast(date_trunc('month', purchase_date) as date) as month, category, customer_region,
                    count(*) as items_sold, round(sum(price), 2) as revenue_brl
             from marts.fct_order_items
             where in_analysis_window and order_status not in ('canceled', 'unavailable')
-            group by all order by month""",
-        "livraisons_par_etat": "select * from read_csv('reports/results/q05_delais_livraison_par_etat.csv')",
-        "qualite_regles": "select * from quality.dq_checks",
+            group by all order by all""",
+        "livraisons_par_etat": "select * from read_csv('reports/results/q05_delais_livraison_par_etat.csv') order by all",
+        "qualite_regles": "select * from quality.dq_checks order by check_id",
     }
     for name, sql in queries.items():
         con.sql(sql).df().to_csv(out / f"{name}.csv", index=False)
@@ -316,7 +316,7 @@ def build_page(con: duckdb.DuckDBPyConnection, items, checks: pd.DataFrame, scor
         from marts.fct_orders where in_analysis_window""").fetchone()
     sections = []
     for i, (cid, question, finding, fig) in enumerate(items):
-        div = fig.to_html(full_html=False, include_plotlyjs="plotly.min.js" if i == 0 else False,
+        div = fig.to_html(full_html=False, div_id=f"chart-{cid}", include_plotlyjs="plotly.min.js" if i == 0 else False,
                           config={"displayModeBar": False, "responsive": True})
         sections.append(f'<section class="card" id="{cid}"><span class="q">{cid.upper()}</span>'
                         f"<h2>{html.escape(question)}</h2><p class=\"finding\">{html.escape(finding)}</p>{div}</section>")
