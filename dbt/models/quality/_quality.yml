@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: dq_checks
+    description: >
+      Catalogue des règles de qualité des données (20 règles) avec leur mesure à chaque exécution.
+      Les dimensions suivent le référentiel DAMA-DMBOK : complétude, unicité, validité, cohérence,
+      conformité, exactitude. Une règle « hors seuil » déclenche une revue par le data steward concerné.
+    config:
+      meta: {owner: "Équipe Data", steward: "Responsable qualité des données", sensitivity: internal}
+    columns:
+      - name: check_id
+        description: Identifiant stable de la règle (préfixe = table).
+        tests: [unique, not_null]
+      - name: quality_dimension
+        description: Dimension de qualité (DAMA).
+        tests:
+          - accepted_values:
+              values: ["Complétude", "Unicité", "Validité", "Cohérence", "Conformité", "Exactitude"]
+      - name: failed_rows
+        description: Lignes qui violent la règle.
+      - name: total_rows
+        description: Population contrôlée.
+      - name: failed_pct
+        description: Pourcentage de lignes en échec.
+      - name: threshold_pct
+        description: Seuil toléré (%), fixé par la politique de qualité (GOUVERNANCE.md).
+      - name: status
+        description: conforme ou hors seuil.
+        tests:
+          - accepted_values: {values: [conforme, "hors seuil"]}
+
+  - name: dq_table_scores
+    description: Score de qualité par table (moyenne des taux de réussite des règles), règle la plus dégradée.
+    config:
+      meta: {owner: "Équipe Data", steward: "Responsable qualité des données", sensitivity: internal}
+    columns:
+      - name: table_name
+        description: Table contrôlée.
+        tests: [unique, not_null]
+      - name: quality_score
+        description: Score de 0 à 100.
