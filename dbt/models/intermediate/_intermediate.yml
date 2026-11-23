@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: int_geolocation__zip_centroids
+    description: >
+      Un point GPS par préfixe de code postal (médiane), après exclusion des coordonnées hors du Brésil.
+      Réduit 1 000 163 points bruts à environ 19 000 préfixes.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward référentiels", sensitivity: internal}
+    columns:
+      - name: zip_prefix
+        description: Préfixe du code postal.
+        tests: [unique, not_null]
+      - name: source_points
+        description: Nombre de points bruts agrégés (indicateur de redondance).
+
+  - name: int_orders__items
+    description: Totaux des articles par commande.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward ventes", sensitivity: internal}
+    columns:
+      - name: order_id
+        description: Commande.
+        tests: [unique, not_null]
+      - name: items_value
+        description: Somme des prix des articles (BRL).
+      - name: freight_value
+        description: Somme des frais de port (BRL).
+
+  - name: int_orders__payments
+    description: Totaux des paiements par commande et moyen de paiement principal.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward finance", sensitivity: internal}
+    columns:
+      - name: order_id
+        description: Commande.
+        tests: [unique, not_null]
+      - name: main_payment_type
+        description: Moyen de paiement du montant le plus élevé.
+
+  - name: int_orders__reviews
+    description: Note retenue par commande (avis le plus récent) et nombre d'avis.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward expérience client", sensitivity: internal}
+    columns:
+      - name: order_id
+        description: Commande.
+        tests: [unique, not_null]
+      - name: review_score
+        description: Note de l'avis le plus récent.

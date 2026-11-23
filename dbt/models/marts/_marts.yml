@@ -1,0 +1,253 @@
+version: 2
+
+# Couche marts : modèle en étoile consommé par les analyses et le tableau de bord.
+# Ces tables sont « certifiées » : tests bloquants, propriétaire désigné, contrat sur fct_orders.
+
+models:
+  - name: fct_orders
+    description: >
+      Table de faits au grain de la commande : montants, paiements, délais de livraison, note client.
+      Montant de référence : order_value = prix des articles + frais de port (GMV). Les commandes sans
+      articles (annulées ou indisponibles) ont un order_value de 0.
+    config:
+      contract: {enforced: true}
+      meta:
+        owner: "Équipe Data"
+        steward: "Data steward ventes"
+        sensitivity: internal
+        certified: true
+    columns:
+      - name: order_id
+        data_type: varchar
+        description: Identifiant unique de la commande.
+        constraints: [{type: not_null}]
+        tests: [unique, not_null]
+      - name: customer_id
+        data_type: varchar
+        description: Identifiant client propre à la commande.
+      - name: customer_unique_id
+        data_type: varchar
+        description: Identifiant pseudonymisé de la personne (clé vers dim_customers).
+        meta: {sensitivity: pii}
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_customers'), field: customer_unique_id}
+      - name: order_status
+        data_type: varchar
+        description: Statut de la commande.
+      - name: purchased_at
+        data_type: timestamp
+        description: Date et heure d'achat.
+      - name: purchase_date
+        data_type: date
+        description: Date d'achat (clé vers dim_dates).
+        tests:
+          - relationships: {to: ref('dim_dates'), field: date_day}
+      - name: approved_at
+        data_type: timestamp
+        description: Approbation du paiement.
+      - name: delivered_to_carrier_at
+        data_type: timestamp
+        description: Remise au transporteur.
+      - name: delivered_to_customer_at
+        data_type: timestamp
+        description: Livraison au client.
+      - name: estimated_delivery_at
+        data_type: timestamp
+        description: Date de livraison promise.
+      - name: customer_state
+        data_type: varchar
+        description: État du client.
+      - name: customer_region
+        data_type: varchar
+        description: Grande région du client.
+      - name: items_count
+        data_type: integer
+        description: Nombre d'articles.
+      - name: sellers_count
+        data_type: integer
+        description: Nombre de vendeurs distincts.
+      - name: items_value
+        data_type: decimal(14,2)
+        description: Somme des prix des articles (BRL).
+        tests:
+          - positive_value: {allow_zero: true}
+      - name: freight_value
+        data_type: decimal(14,2)
+        description: Somme des frais de port (BRL).
+      - name: order_value
+        data_type: decimal(14,2)
+        description: Montant de la commande = articles + frais de port (BRL). KPI « chiffre d'affaires ».
+      - name: payments_value
+        data_type: decimal(14,2)
+        description: Somme des paiements reçus (BRL).
+      - name: payments_count
+        data_type: integer
+        description: Nombre de paiements.
+      - name: main_payment_type
+        data_type: varchar
+        description: Moyen de paiement principal.
+      - name: max_installments
+        data_type: integer
+        description: Nombre maximal de mensualités.
+      - name: review_score
+        data_type: integer
+        description: Note client retenue (avis le plus récent), de 1 à 5.
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5], quote: false}
+      - name: reviews_count
+        data_type: integer
+        description: Nombre d'avis pour la commande.
+      - name: delivery_days
+        data_type: double
+        description: Délai achat → livraison, en jours.
+        tests:
+          - positive_value: {allow_zero: true}
+      - name: delay_days
+        data_type: double
+        description: Écart livraison réelle − date promise, en jours (positif = retard).
+      - name: is_delivered
+        data_type: boolean
+        description: Commande livrée avec une date de livraison connue.
+      - name: is_late
+        data_type: boolean
+        description: Livrée après la date promise (comparaison au jour près).
+      - name: in_analysis_window
+        data_type: boolean
+        description: Commande passée pendant la fenêtre d'analyse (janv. 2017 – août 2018, mois complets).
+
+  - name: fct_order_items
+    description: Table de faits au grain de l'article (analyses par catégorie, vendeur, région).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward ventes", sensitivity: internal, certified: true}
+    tests:
+      - unique_combination: {combination_of_columns: [order_id, order_item_id]}
+    columns:
+      - name: order_id
+        description: Commande.
+        tests:
+          - relationships: {to: ref('fct_orders'), field: order_id}
+      - name: product_id
+        description: Produit.
+        tests:
+          - relationships: {to: ref('dim_products'), field: product_id}
+      - name: seller_id
+        description: Vendeur.
+        tests:
+          - relationships: {to: ref('dim_sellers'), field: seller_id}
+      - name: category
+        description: Catégorie produit en anglais (« unknown » si absente).
+        tests: [not_null]
+      - name: price
+        description: Prix de l'article (BRL).
+
+  - name: dim_customers
+    description: >
+      Une ligne par personne (customer_unique_id) : cohorte, nombre de commandes, valeur vie client
+      (commandes livrées uniquement).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward clients", sensitivity: pii, certified: true}
+    columns:
+      - name: customer_unique_id
+        description: Identifiant pseudonymisé de la personne.
+        meta: {sensitivity: pii}
+        tests: [unique, not_null]
+      - name: zip_prefix
+        description: Préfixe postal de la dernière commande (quasi-identifiant).
+        meta: {sensitivity: pii}
+        tests:
+          # quelques préfixes clients n'existent pas dans le fichier de géolocalisation
+          - relationships:
+              to: ref('dim_geography')
+              field: zip_prefix
+              config: {severity: warn}
+      - name: city
+        description: Ville de la dernière commande (quasi-identifiant).
+        meta: {sensitivity: pii}
+      - name: cohort_month
+        description: Mois de la première commande (cohorte).
+        tests: [not_null]
+      - name: lifetime_value
+        description: Valeur des commandes livrées (BRL).
+        tests:
+          - positive_value: {allow_zero: true}
+      - name: is_repeat_customer
+        description: Au moins deux commandes livrées.
+
+  - name: dim_products
+    description: Produits avec catégorie traduite et origine de la traduction.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward catalogue produits", sensitivity: public, certified: true}
+    columns:
+      - name: product_id
+        description: Identifiant du produit.
+        tests: [unique, not_null]
+      - name: category
+        description: Catégorie en anglais ; « unknown » quand la source n'en donne pas.
+        tests: [not_null]
+      - name: category_translation_source
+        description: officielle, correction (référentiel) ou absente (produit sans catégorie).
+        tests:
+          - accepted_values: {values: [officielle, correction, absente]}
+
+  - name: dim_sellers
+    description: Vendeurs avec région et position GPS.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward vendeurs", sensitivity: internal, certified: true}
+    columns:
+      - name: seller_id
+        description: Identifiant du vendeur.
+        tests: [unique, not_null]
+
+  - name: dim_geography
+    description: Référentiel géographique au grain du préfixe postal (ville, État, région, GPS).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward référentiels", sensitivity: internal, certified: true}
+    columns:
+      - name: zip_prefix
+        description: Préfixe du code postal.
+        tests: [unique, not_null]
+      - name: region
+        description: Grande région IBGE.
+
+  - name: dim_dates
+    description: Calendrier de septembre 2016 à décembre 2018, avec la fenêtre d'analyse.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward référentiels", sensitivity: public, certified: true}
+    columns:
+      - name: date_day
+        description: Jour.
+        tests: [unique, not_null]
+
+exposures:
+  - name: tableau_de_bord_ventes
+    label: Tableau de bord ventes et logistique
+    type: dashboard
+    maturity: medium
+    url: https://github.com/tsitohaina23/olist-analytics-governance/tree/main/docs/report
+    description: >
+      Page de graphiques interactifs (docs/report/index.html) et tableau de bord Looker Studio / Power BI
+      alimentés par les marts. Toute modification de fct_orders doit être vérifiée contre ce tableau de bord.
+    depends_on:
+      - ref('fct_orders')
+      - ref('fct_order_items')
+      - ref('dim_customers')
+      - ref('dim_sellers')
+    owner:
+      name: Sitraka Tsitohaina RAJOELISOLO
+      email: tsitohaina.rajoelisolo@gmail.com
+
+  - name: etude_de_cas_sql
+    label: Étude de cas SQL (10 questions métier)
+    type: analysis
+    maturity: high
+    url: https://github.com/tsitohaina23/olist-analytics-governance/tree/main/sql/analyses
+    description: Les 10 requêtes d'analyse de sql/analyses, exécutées par scripts/run_analyses.py.
+    depends_on:
+      - ref('fct_orders')
+      - ref('fct_order_items')
+      - ref('dim_customers')
+      - ref('dim_dates')
+    owner:
+      name: Sitraka Tsitohaina RAJOELISOLO
+      email: tsitohaina.rajoelisolo@gmail.com
