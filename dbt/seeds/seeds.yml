@@ -1,0 +1,44 @@
+version: 2
+
+seeds:
+  - name: brazil_states
+    description: >
+      Référentiel des 27 unités fédératives du Brésil et de leur grande région (IBGE).
+      Donnée de référence maintenue à la main : toute modification passe par une revue.
+    config:
+      meta:
+        owner: "Équipe Data"
+        steward: "Data steward référentiels"
+        sensitivity: public
+    columns:
+      - name: state_code
+        description: Sigle de l'État (UF), clé du référentiel.
+        tests: [unique, not_null]
+      - name: state_name
+        description: Nom complet de l'État.
+        tests: [not_null]
+      - name: region
+        description: Grande région IBGE.
+        tests:
+          - accepted_values:
+              values: ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]
+
+  - name: category_translation_fixes
+    description: >
+      Corrections de la table de traduction des catégories : deux catégories présentes dans les
+      produits n'ont pas de traduction officielle. Chaque ligne documente la raison de la correction.
+    config:
+      meta:
+        owner: "Équipe Data"
+        steward: "Data steward catalogue produits"
+        sensitivity: public
+    columns:
+      - name: product_category_name
+        description: Catégorie d'origine (portugais).
+        tests: [unique, not_null]
+      - name: product_category_name_english
+        description: Traduction retenue.
+        tests: [not_null]
+      - name: fix_reason
+        description: Justification de la correction (traçabilité).
+        tests: [not_null]

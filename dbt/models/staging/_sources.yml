@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: olist_raw
+    description: >
+      Données brutes publiées par Olist (marketplace brésilienne), commandes de 2016 à 2018.
+      Source officielle : https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce (CC BY-NC-SA 4.0).
+      Les fichiers sont lus directement en CSV par DuckDB ; leur intégrité (nombre de lignes)
+      est vérifiée par scripts/download_data.py avant chaque exécution.
+    meta:
+      owner: "Olist (fournisseur externe)"
+      steward: "Data steward ingestion"
+      external_location: "read_csv('data/raw/{name}.csv', header = true, auto_detect = true)"
+    tables:
+      - name: olist_orders_dataset
+        description: Une ligne par commande, avec son statut et les horodatages du cycle de vie.
+      - name: olist_order_items_dataset
+        description: Une ligne par article d'une commande (prix et frais de port).
+      - name: olist_order_payments_dataset
+        description: Une ligne par paiement ; une commande peut avoir plusieurs paiements.
+      - name: olist_order_reviews_dataset
+        description: Avis laissés par les clients après livraison.
+      - name: olist_customers_dataset
+        description: >
+          Clients. customer_id est propre à chaque commande ; customer_unique_id identifie la personne.
+        meta:
+          sensitivity: pii
+      - name: olist_sellers_dataset
+        description: Vendeurs de la marketplace.
+      - name: olist_products_dataset
+        description: Catalogue produits (catégorie et dimensions).
+      - name: olist_geolocation_dataset
+        description: Coordonnées GPS par préfixe de code postal (plusieurs points par préfixe).
+      - name: product_category_name_translation
+        description: Traduction portugais → anglais des catégories produits.

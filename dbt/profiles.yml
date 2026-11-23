@@ -1,0 +1,8 @@
+olist_governance:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # relatif à la racine du dépôt ; surchargeable par la variable d'environnement OLIST_DUCKDB_PATH
+      path: "{{ env_var('OLIST_DUCKDB_PATH', 'data/olist.duckdb') }}"
+      threads: 4

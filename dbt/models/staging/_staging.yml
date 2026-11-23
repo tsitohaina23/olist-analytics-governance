@@ -1,0 +1,211 @@
+version: 2
+
+# Couche staging : typage, renommage et nettoyage minimal, une vue par table source.
+# Règle de gouvernance : on ne supprime aucune ligne « gênante » ici ; les anomalies sont
+# mesurées dans models/quality et traitées explicitement dans les couches suivantes.
+
+models:
+  - name: stg_olist__orders
+    description: Commandes, une ligne par commande, statut en minuscules et dates typées.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward ventes", sensitivity: internal}
+    columns:
+      - name: order_id
+        description: Identifiant unique de la commande.
+        tests: [unique, not_null]
+      - name: customer_id
+        description: Identifiant client propre à cette commande (clé vers stg_olist__customers).
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_olist__customers'), field: customer_id}
+      - name: order_status
+        description: Statut du cycle de vie de la commande.
+        tests:
+          - accepted_values:
+              values: [created, approved, invoiced, processing, shipped, delivered, canceled, unavailable]
+      - name: purchased_at
+        description: Date et heure d'achat.
+        tests: [not_null]
+      - name: approved_at
+        description: Date et heure d'approbation du paiement.
+      - name: delivered_to_carrier_at
+        description: Remise au transporteur.
+      - name: delivered_to_customer_at
+        description: Livraison au client.
+        tests:
+          - not_before: {reference_column: purchased_at}
+      - name: estimated_delivery_at
+        description: Date de livraison promise au client.
+
+  - name: stg_olist__order_items
+    description: Articles des commandes (une ligne par article).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward ventes", sensitivity: internal}
+    tests:
+      - unique_combination: {combination_of_columns: [order_id, order_item_id]}
+    columns:
+      - name: order_id
+        description: Commande d'appartenance.
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_olist__orders'), field: order_id}
+      - name: order_item_id
+        description: Rang de l'article dans la commande (1, 2, …).
+      - name: product_id
+        description: Produit vendu.
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_olist__products'), field: product_id}
+      - name: seller_id
+        description: Vendeur de l'article.
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_olist__sellers'), field: seller_id}
+      - name: shipping_limit_at
+        description: Date limite d'expédition par le vendeur.
+      - name: price
+        description: Prix de l'article en réais (BRL).
+        tests: [not_null, positive_value]
+      - name: freight_value
+        description: Frais de port de l'article en réais (BRL).
+        tests:
+          - positive_value: {allow_zero: true}
+
+  - name: stg_olist__payments
+    description: Paiements ; une commande peut être réglée en plusieurs fois ou avec plusieurs moyens.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward finance", sensitivity: internal}
+    tests:
+      - unique_combination: {combination_of_columns: [order_id, payment_sequential]}
+    columns:
+      - name: order_id
+        description: Commande réglée.
+        tests: [not_null]
+      - name: payment_sequential
+        description: Rang du paiement pour la commande.
+      - name: payment_type
+        description: Moyen de paiement.
+        tests:
+          - accepted_values:
+              values: [credit_card, boleto, voucher, debit_card, not_defined]
+      - name: payment_installments
+        description: Nombre de mensualités (cartes de crédit).
+      - name: payment_value
+        description: Montant payé en réais (BRL).
+        tests:
+          - positive_value: {allow_zero: true}
+
+  - name: stg_olist__reviews
+    description: >
+      Avis clients dédoublonnés sur (review_id, order_id). Un même avis peut porter sur plusieurs
+      commandes ; une commande peut avoir plusieurs avis.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward expérience client", sensitivity: internal}
+    tests:
+      - unique_combination: {combination_of_columns: [review_id, order_id]}
+    columns:
+      - name: review_id
+        description: Identifiant de l'avis.
+        tests: [not_null]
+      - name: order_id
+        description: Commande évaluée.
+        tests:
+          - not_null
+          - relationships: {to: ref('stg_olist__orders'), field: order_id}
+      - name: review_score
+        description: Note de 1 à 5.
+        tests:
+          - not_null
+          - accepted_values: {values: [1, 2, 3, 4, 5], quote: false}
+      - name: review_title
+        description: Titre libre (texte saisi par le client).
+        meta: {sensitivity: free_text}
+      - name: review_message
+        description: Commentaire libre. Peut contenir des données personnelles saisies par le client.
+        meta: {sensitivity: free_text}
+      - name: review_created_at
+        description: Envoi du questionnaire.
+      - name: review_answered_at
+        description: Réponse du client.
+
+  - name: stg_olist__customers
+    description: >
+      Clients. customer_id est propre à une commande ; customer_unique_id identifie la personne
+      (identifiant pseudonymisé par Olist).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward clients", sensitivity: pii}
+    columns:
+      - name: customer_id
+        description: Identifiant client par commande.
+        tests: [unique, not_null]
+      - name: customer_unique_id
+        description: Identifiant pseudonymisé de la personne.
+        tests: [not_null]
+        meta: {sensitivity: pii}
+      - name: customer_zip_prefix
+        description: Préfixe du code postal (5 chiffres). Quasi-identifiant.
+        meta: {sensitivity: pii}
+      - name: customer_city
+        description: Ville (minuscules). Quasi-identifiant.
+        meta: {sensitivity: pii}
+      - name: customer_state
+        description: État (UF).
+        tests:
+          - relationships: {to: ref('brazil_states'), field: state_code}
+
+  - name: stg_olist__sellers
+    description: Vendeurs de la marketplace.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward vendeurs", sensitivity: internal}
+    columns:
+      - name: seller_id
+        description: Identifiant du vendeur.
+        tests: [unique, not_null]
+      - name: seller_zip_prefix
+        description: Préfixe du code postal du vendeur.
+      - name: seller_city
+        description: Ville du vendeur.
+      - name: seller_state
+        description: État du vendeur.
+        tests:
+          - relationships: {to: ref('brazil_states'), field: state_code}
+
+  - name: stg_olist__products
+    description: Catalogue produits ; noms de colonnes corrigés (« lenght » → « length »).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward catalogue produits", sensitivity: public}
+    columns:
+      - name: product_id
+        description: Identifiant du produit.
+        tests: [unique, not_null]
+      - name: product_category_name
+        description: Catégorie en portugais (610 produits sans catégorie dans la source).
+      - name: product_weight_g
+        description: Poids en grammes.
+        tests:
+          - positive_value: {allow_zero: true}
+
+  - name: stg_olist__geolocation
+    description: Points GPS bruts par préfixe de code postal (fortement redondants).
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward référentiels", sensitivity: internal}
+    columns:
+      - name: zip_prefix
+        description: Préfixe du code postal.
+        tests: [not_null]
+
+  - name: stg_olist__category_translation
+    description: Traduction des catégories, officielle et complétée par le référentiel de corrections.
+    config:
+      meta: {owner: "Équipe Data", steward: "Data steward catalogue produits", sensitivity: public}
+    columns:
+      - name: product_category_name
+        description: Catégorie en portugais.
+        tests: [unique, not_null]
+      - name: product_category_name_english
+        description: Catégorie en anglais.
+        tests: [not_null]
+      - name: translation_source
+        description: officielle ou correction (traçabilité).
+        tests:
+          - accepted_values: {values: [officielle, correction]}
