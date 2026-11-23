@@ -1,0 +1,21 @@
+check_id,table_name,quality_dimension,description,failed_rows,total_rows,failed_pct,threshold_pct,status
+CUS-01,customers,Conformité,Préfixe postal client absent du référentiel de géolocalisation,278,99441,0.28,0.5,conforme
+GEO-01,geolocation,Unicité,"Ligne en double exact (même préfixe, mêmes coordonnées)",280009,1000163,27.996,5.0,hors seuil
+GEO-02,geolocation,Validité,Coordonnées situées hors du Brésil,42,1000163,0.004,0.01,conforme
+ITM-01,order_items,Validité,Article à prix nul ou négatif,0,112650,0.0,0.0,conforme
+ORD-01,orders,Complétude,Commande non annulée sans date d'approbation du paiement,19,98816,0.019,0.5,conforme
+ORD-02,orders,Cohérence,Statut « delivered » sans date de livraison au client,8,96478,0.008,0.1,conforme
+ORD-03,orders,Validité,Remise au transporteur datée avant l'achat,166,97658,0.17,0.1,hors seuil
+ORD-04,orders,Cohérence,Commande sans aucun article,775,99441,0.779,1.0,conforme
+ORD-05,orders,Cohérence,Commande sans aucun paiement,1,99441,0.001,0.1,conforme
+ORD-06,orders,Exactitude,Commande livrée dont les paiements diffèrent du montant articles + port de plus de 1 BRL,247,96470,0.256,1.0,conforme
+PAY-01,payments,Validité,Moyen de paiement non défini (« not_defined »),3,103886,0.003,0.1,conforme
+PAY-02,payments,Validité,Paiement d'un montant nul,9,103886,0.009,0.1,conforme
+PAY-03,payments,Validité,Paiement par carte de crédit avec 0 mensualité,2,76795,0.003,0.1,conforme
+PRD-01,products,Complétude,Produit sans catégorie,610,32951,1.851,1.0,hors seuil
+PRD-02,products,Conformité,Produit dont la catégorie n'a pas de traduction officielle,13,32341,0.04,0.1,conforme
+PRD-03,products,Validité,Poids manquant ou égal à zéro,6,32951,0.018,0.1,conforme
+REV-01,reviews,Unicité,Ligne d'avis dont le review_id est partagé par plusieurs commandes (achat groupé),814,99224,0.82,0.5,hors seuil
+REV-02,reviews,Unicité,Commande ayant reçu plusieurs avis,547,98673,0.554,0.5,hors seuil
+REV-03,reviews,Validité,Note hors de l'échelle 1 à 5,0,99224,0.0,0.0,conforme
+SEL-01,sellers,Conformité,Préfixe postal vendeur absent du référentiel de géolocalisation,7,3095,0.226,0.5,conforme

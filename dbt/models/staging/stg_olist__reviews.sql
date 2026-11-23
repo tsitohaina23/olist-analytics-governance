@@ -1,6 +1,6 @@
--- Avis clients. Le fichier brut contient des doublons stricts de (review_id, order_id) :
--- on garde la réponse la plus récente. Un même review_id peut couvrir plusieurs commandes
--- (achats groupés) : ce n'est pas une erreur, la clé de cette table est donc (review_id, order_id).
+-- Avis clients. Un même review_id peut couvrir plusieurs commandes (789 avis, achats groupés) :
+-- la clé de cette table est donc (review_id, order_id). La source ne contient pas de doublon strict
+-- sur cette clé ; le filtre ci-dessous garantit l'unicité si un export futur en introduisait.
 with source as (
     select
         review_id,

@@ -97,8 +97,8 @@ models:
 
   - name: stg_olist__reviews
     description: >
-      Avis clients dédoublonnés sur (review_id, order_id). Un même avis peut porter sur plusieurs
-      commandes ; une commande peut avoir plusieurs avis.
+      Avis clients, uniques sur (review_id, order_id). Un même avis peut porter sur plusieurs
+      commandes (achat groupé) ; une commande peut avoir plusieurs avis.
     config:
       meta: {owner: "Équipe Data", steward: "Data steward expérience client", sensitivity: internal}
     tests:

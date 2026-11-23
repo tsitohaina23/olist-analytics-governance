@@ -55,7 +55,7 @@
      'failed': "select count(*) from " ~ stg.payments ~ " where payment_type = 'credit_card' and payment_installments = 0",
      'total': "select count(*) from " ~ stg.payments ~ " where payment_type = 'credit_card'", 'threshold': 0.1},
     {'id': 'REV-01', 'table': 'reviews', 'dim': 'Unicité',
-     'desc': "Lignes d'avis dont le review_id apparaît plusieurs fois dans le fichier source",
+     'desc': "Ligne d'avis dont le review_id est partagé par plusieurs commandes (achat groupé)",
      'failed': "select count(*) - count(distinct review_id) from " ~ stg.raw_reviews,
      'total': "select count(*) from " ~ stg.raw_reviews, 'threshold': 0.5},
     {'id': 'REV-02', 'table': 'reviews', 'dim': 'Unicité',
