@@ -1,0 +1,137 @@
+@prefix gl:   <https://github.com/tsitohaina23/olist-analytics-governance/glossaire#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# Glossaire métier du projet, en SKOS : chaque KPI est un concept avec ses définitions FR/EN,
+# ses relations (plus large / plus spécifique / lié) et la colonne dbt qui le calcule (gl:computedBy).
+# Ouvrable dans Protégé, Skosmos ou tout outil RDF ; interrogeable en SPARQL.
+
+gl:computedBy a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+    skos:prefLabel "calculé par"@fr , "computed by"@en ;
+    skos:definition "Colonne ou requête du pipeline dbt qui calcule le concept."@fr .
+
+gl:GlossaireOlist a skos:ConceptScheme ;
+    skos:prefLabel "Glossaire métier Olist"@fr , "Olist business glossary"@en ;
+    dct:creator "Sitraka Tsitohaina RAJOELISOLO" ;
+    dct:created "2026-11-23"^^xsd:date ;
+    skos:hasTopConcept gl:Ventes , gl:Logistique , gl:Clients , gl:Qualite .
+
+# --- Domaines -----------------------------------------------------------------
+gl:Ventes a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:topConceptOf gl:GlossaireOlist ;
+    skos:prefLabel "Ventes"@fr , "Sales"@en ;
+    skos:definition "Indicateurs de chiffre d'affaires, de panier et de paiement."@fr .
+
+gl:Logistique a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:topConceptOf gl:GlossaireOlist ;
+    skos:prefLabel "Logistique"@fr , "Logistics"@en ;
+    skos:definition "Indicateurs de livraison et de respect des délais promis."@fr .
+
+gl:Clients a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:topConceptOf gl:GlossaireOlist ;
+    skos:prefLabel "Clients"@fr , "Customers"@en ;
+    skos:definition "Indicateurs de fidélité et de satisfaction des clients."@fr .
+
+gl:Qualite a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:topConceptOf gl:GlossaireOlist ;
+    skos:prefLabel "Qualité des données"@fr , "Data quality"@en ;
+    skos:definition "Mesures de la qualité des données selon les dimensions DAMA."@fr .
+
+# --- Ventes ---------------------------------------------------------------------
+gl:ChiffreAffaires a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Ventes ;
+    skos:prefLabel "Chiffre d'affaires (GMV)"@fr , "Gross merchandise value"@en ;
+    skos:altLabel "GMV"@fr , "Revenue"@en ;
+    skos:definition "Montant des articles et des frais de port des commandes non annulées et non indisponibles."@fr ,
+                    "Item price plus freight of orders that are neither canceled nor unavailable."@en ;
+    gl:computedBy "sum(marts.fct_orders.order_value)" ;
+    skos:narrower gl:ChiffreAffairesProduits ;
+    skos:related gl:PanierMoyen .
+
+gl:ChiffreAffairesProduits a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:ChiffreAffaires ;
+    skos:prefLabel "Chiffre d'affaires produits"@fr , "Product revenue"@en ;
+    skos:definition "Montant des articles, hors frais de port."@fr , "Item price only, excluding freight."@en ;
+    gl:computedBy "sum(marts.fct_order_items.price)" .
+
+gl:PanierMoyen a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Ventes ;
+    skos:prefLabel "Panier moyen"@fr , "Average order value"@en ;
+    skos:altLabel "AOV"@en ;
+    skos:definition "Chiffre d'affaires divisé par le nombre de commandes."@fr , "Revenue divided by the number of orders."@en ;
+    gl:computedBy "avg(marts.fct_orders.order_value)" ;
+    skos:related gl:ChiffreAffaires , gl:Mensualites .
+
+gl:Mensualites a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Ventes ;
+    skos:prefLabel "Nombre de mensualités"@fr , "Number of installments"@en ;
+    skos:definition "Nombre maximal d'échéances choisi pour régler une commande."@fr ,
+                    "Maximum number of installments chosen to pay for an order."@en ;
+    gl:computedBy "marts.fct_orders.max_installments" .
+
+# --- Logistique -----------------------------------------------------------------
+gl:CommandeLivree a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Logistique ;
+    skos:prefLabel "Commande livrée"@fr , "Delivered order"@en ;
+    skos:definition "Commande au statut « delivered » dont la date de livraison au client est connue."@fr ,
+                    "Order with status 'delivered' and a known customer delivery date."@en ;
+    gl:computedBy "marts.fct_orders.is_delivered" .
+
+gl:DelaiLivraison a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Logistique ;
+    skos:prefLabel "Délai de livraison"@fr , "Delivery time"@en ;
+    skos:definition "Nombre de jours entre l'achat et la livraison au client."@fr ,
+                    "Days between purchase and delivery to the customer."@en ;
+    gl:computedBy "marts.fct_orders.delivery_days" ;
+    skos:related gl:CommandeEnRetard .
+
+gl:CommandeEnRetard a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Logistique ;
+    skos:prefLabel "Commande en retard"@fr , "Late order"@en ;
+    skos:definition "Commande livrée après la date de livraison promise, comparée au jour près."@fr ,
+                    "Order delivered after the promised date, compared by calendar day."@en ;
+    gl:computedBy "marts.fct_orders.is_late" ;
+    skos:narrower gl:TauxRetard ;
+    skos:related gl:NoteClient .
+
+gl:TauxRetard a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:CommandeEnRetard ;
+    skos:prefLabel "Taux de retard"@fr , "Late delivery rate"@en ;
+    skos:definition "Commandes en retard divisées par les commandes livrées."@fr ,
+                    "Late orders divided by delivered orders."@en ;
+    gl:computedBy "count_if(is_late) / count_if(is_delivered) sur marts.fct_orders" .
+
+# --- Clients --------------------------------------------------------------------
+gl:Client a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Clients ;
+    skos:prefLabel "Client"@fr , "Customer"@en ;
+    skos:definition "Une personne, identifiée par customer_unique_id, et non un identifiant de commande."@fr ,
+                    "A person identified by customer_unique_id, not a per-order identifier."@en ;
+    skos:scopeNote "customer_id est propre à chaque commande : ne pas l'utiliser pour compter les clients."@fr ;
+    gl:computedBy "marts.dim_customers" .
+
+gl:ClientRecurrent a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Client ;
+    skos:prefLabel "Client récurrent"@fr , "Repeat customer"@en ;
+    skos:definition "Client ayant au moins deux commandes livrées."@fr , "Customer with at least two delivered orders."@en ;
+    gl:computedBy "marts.dim_customers.is_repeat_customer" ;
+    skos:related gl:Retention .
+
+gl:Cohorte a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Clients ;
+    skos:prefLabel "Cohorte"@fr , "Cohort"@en ;
+    skos:definition "Ensemble des clients dont la première commande a eu lieu le même mois."@fr ,
+                    "Customers whose first order happened in the same month."@en ;
+    gl:computedBy "marts.dim_customers.cohort_month" .
+
+gl:Retention a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Clients ;
+    skos:prefLabel "Rétention M+k"@fr , "Month-k retention"@en ;
+    skos:definition "Part d'une cohorte qui commande à nouveau k mois après son premier achat."@fr ,
+                    "Share of a cohort ordering again k months after its first purchase."@en ;
+    gl:computedBy "sql/analyses/q04_retention_cohortes.sql" ;
+    skos:related gl:Cohorte .
+
+gl:NoteClient a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Clients ;
+    skos:prefLabel "Note client retenue"@fr , "Retained review score"@en ;
+    skos:definition "Note de 1 à 5 de l'avis le plus récent de la commande."@fr ,
+                    "1 to 5 score of the order's most recent review."@en ;
+    gl:computedBy "marts.fct_orders.review_score" .
+
+# --- Qualité --------------------------------------------------------------------
+gl:ScoreQualite a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Qualite ;
+    skos:prefLabel "Score de qualité d'une table"@fr , "Table quality score"@en ;
+    skos:definition "Moyenne, sur les règles d'une table, de la part des lignes conformes (0 à 100)."@fr ,
+                    "Average share of compliant rows across a table's rules (0 to 100)."@en ;
+    gl:computedBy "quality.dq_table_scores.quality_score" .
+
+gl:RegleHorsSeuil a skos:Concept ; skos:inScheme gl:GlossaireOlist ; skos:broader gl:Qualite ;
+    skos:prefLabel "Règle hors seuil"@fr , "Rule out of threshold"@en ;
+    skos:definition "Règle de qualité dont le pourcentage de lignes en échec dépasse le seuil toléré."@fr ,
+                    "Quality rule whose failure percentage exceeds its tolerated threshold."@en ;
+    gl:computedBy "quality.dq_checks.status" .
