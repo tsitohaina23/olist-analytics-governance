@@ -1,0 +1,6 @@
+customer_region,orders,average_order_value,average_freight,freight_share_pct,items_per_order
+Norte,1828,223.32,41.37,18.5,1.12
+Nordeste,9272,201.17,35.92,17.9,1.11
+Centro-Oeste,5712,176.98,26.51,15.0,1.15
+Sul,13947,162.82,24.4,15.0,1.15
+Sudeste,67146,150.84,19.86,13.2,1.14

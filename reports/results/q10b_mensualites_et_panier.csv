@@ -1,0 +1,6 @@
+installments_bucket,orders,orders_share_pct,average_order_value,median_order_value
+1. Comptant,23675,32.0,100.81,71.64
+2. 2 à 3 fois,22344,30.2,135.25,111.5
+3. 4 à 6 fois,15922,21.5,182.07,128.19
+4. 7 à 10 fois,11614,15.7,333.87,206.24
+5. Plus de 10 fois,336,0.5,360.12,214.16

@@ -1,0 +1,6 @@
+purchase_date,day_name,orders,month_daily_average,ratio_to_month_average
+2017-11-24,Friday,1176,251.5,4.7
+2017-11-25,Saturday,499,251.5,2.0
+2017-11-27,Monday,403,251.5,1.6
+2017-11-26,Sunday,391,251.5,1.6
+2017-11-28,Tuesday,380,251.5,1.5

@@ -1,0 +1,3 @@
+customer_type,customers,customers_share_pct,revenue_brl,revenue_share_pct,avg_lifetime_value,avg_delivered_orders
+Unique (1 commande livrée),90557,97.0,14555586.29,94.4,160.73,1.0
+Récurrent (2 commandes livrées ou plus),2801,3.0,864187.46,5.6,308.53,2.11
